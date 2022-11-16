@@ -3,19 +3,29 @@ pragma solidity 0.8.17;
 
 import { ISimpleSwap } from "./interface/ISimpleSwap.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import '../libraries/Math.sol';
 
 contract SimpleSwap is ISimpleSwap, ERC20 {
     // Implement core logic here
     address private immutable owner;
+    address private immutable addressA;
+    address private immutable addressB;
 
-
-    // constructor(string memory name, string memory symbol) ERC20(name, symbol) {
-    //     owner = msg.sender;
-    // }
     constructor(address _addressA, address _addressB) ERC20("HulkToken","Hulk") {
         if (_addressA == address(0x0)) {
             revert("SimpleSwap: TOKENA_IS_NOT_CONTRACT");
         }
+
+        if (_addressB == address(0x0)) {
+            revert("SimpleSwap: TOKENB_IS_NOT_CONTRACT");
+        }
+
+        if (_addressA == _addressB) {
+            revert("SimpleSwap: TOKENA_TOKENB_IDENTICAL_ADDRESS");
+        }
+
+        addressA = _addressA;
+        addressB = _addressB;
         
         owner = msg.sender;
     }
@@ -34,6 +44,22 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
             uint256 amountB,
             uint256 liquidity
         ) {
+
+        if (amountA <= 0) {
+            revert("SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");
+        }
+        if (amountB <= 0) {
+            revert("SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");
+        }
+
+        // uint liquidity = sqrt(amountA.mul(amountB));
+        // event AddLiquidity(address indexed sender, uint256 amountA, uint256 amountB, uint256 liquidity);
+        // emit AddLiquidity(sender, amountA, amountB, liquidity);
+
+
+                //             await expect(simpleSwap.connect(maker).addLiquidity(amountA, amountB)).to.revertedWith(
+                //     "SimpleSwap: INSUFFICIENT_INPUT_AMOUNT",
+                // )
             return (1,2,3);
     }
 
@@ -44,14 +70,14 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
 
 
     function getReserves() external view override returns (uint256 reserveA, uint256 reserveB) {
-        return(1,2);
+        return(0,0);
     }   
 
     function getTokenA() external view override returns (address tokenA) {
-        return address(this);
+        return addressA;
     }
 
     function getTokenB() external view override returns (address tokenB) {
-        return address(this);
+        return addressB;
     }
 }
