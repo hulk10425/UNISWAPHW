@@ -56,9 +56,6 @@ describe("SimpleSwap Spec", () => {
         })
 
         it("forces error, when tokenA is not a contract", async () => {
-            console.log(ethers.constants.AddressZero)
-            console.log(tokenB.address)
-            
             await expect(simpleSwapFactory.deploy(ethers.constants.AddressZero, tokenB.address)).to.be.revertedWith(
                 "SimpleSwap: TOKENA_IS_NOT_CONTRACT",
             )
@@ -324,6 +321,10 @@ describe("SimpleSwap Spec", () => {
                 .to.changeTokenBalances(tokenB, [taker, simpleSwap], [amountOut, amountOut.mul(-1)])
                 .emit(simpleSwap, "Swap")
                 .withArgs(taker.address, tokenIn, tokenOut, amountIn, amountOut)
+
+            const [reserveA, reserveB] = await simpleSwap.getReserves()
+            expect(reserveA).to.equal(parseUnits("200", tokenADecimals));
+            expect(reserveB).to.equal(parseUnits("50", tokenBDecimals));
         })
 
         it("should be able to swap from tokenB to tokenA", async () => {
@@ -337,6 +338,10 @@ describe("SimpleSwap Spec", () => {
                 .to.changeTokenBalances(tokenB, [taker, simpleSwap], [amountIn.mul(-1), amountIn])
                 .emit(simpleSwap, "Swap")
                 .withArgs(taker.address, tokenIn, tokenOut, amountIn, amountOut)
+
+            const [reserveA, reserveB] = await simpleSwap.getReserves()
+            expect(reserveA).to.equal(parseUnits("50", tokenADecimals));
+            expect(reserveB).to.equal(parseUnits("200", tokenBDecimals));
         })
     })
 
@@ -397,7 +402,7 @@ describe("SimpleSwap Spec", () => {
             expect(reserveB).to.eq(0)
         })
 
-        it("should be able to get reserves after add liquidity", async () => {
+        it("should update reserves after add liquidity", async () => {
             const amountA = parseUnits("100", tokenADecimals)
             const amountB = parseUnits("100", tokenBDecimals)
             await simpleSwap.connect(maker).addLiquidity(amountA, amountB)
@@ -406,6 +411,25 @@ describe("SimpleSwap Spec", () => {
             expect(reserveA).to.eq(amountA)
             expect(reserveB).to.eq(amountB)
         })
+
+        describe("when there is already some liquidity", async () => {
+          beforeEach(async () => {
+            const amountA = parseUnits("100", tokenADecimals)
+            const amountB = parseUnits("100", tokenBDecimals)
+            await simpleSwap.connect(maker).addLiquidity(amountA, amountB)
+          });
+
+          it("should update reserves after remove liquidity", async () => {
+              await simpleSwap.connect(maker).approve(simpleSwap.address, parseUnits("100", slpDecimals))
+              await simpleSwap.connect(maker).removeLiquidity(parseUnits("100", slpDecimals))
+
+              const [reserveA, reserveB] = await simpleSwap.getReserves()
+              expect(reserveA).to.eq(0)
+              expect(reserveB).to.eq(0)
+          })
+          
+        });
+
     })
 
     describe("# getTokenA", () => {
