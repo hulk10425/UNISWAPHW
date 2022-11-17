@@ -184,7 +184,6 @@ describe("SimpleSwap Spec", () => {
                 const amountB = parseUnits("50", tokenBDecimals) // 50 > amountA / reserveA * reserveB = 90 / 45 * 20 = 40
                 const actualAmountB = amountA.mul(reserveBAfterFirstAddLiquidity).div(reserveAAfterFirstAddLiquidity)
                 const liquidity = sqrt(amountA.mul(actualAmountB))
-
                 // check event and balanceChanged
                 await expect(simpleSwap.connect(maker).addLiquidity(amountA, amountB))
                     .to.changeTokenBalances(tokenA, [maker, simpleSwap], [amountA.mul(-1), amountA])
@@ -193,7 +192,6 @@ describe("SimpleSwap Spec", () => {
                     .withArgs(maker.address, amountA, actualAmountB, liquidity)
 
                 const [reserveA, reserveB] = await simpleSwap.getReserves()
-
                 // check reserve after addLiquidity
                 expect(reserveA).to.be.eq(reserveAAfterFirstAddLiquidity.add(amountA))
                 expect(reserveB).to.be.eq(reserveBAfterFirstAddLiquidity.add(actualAmountB))

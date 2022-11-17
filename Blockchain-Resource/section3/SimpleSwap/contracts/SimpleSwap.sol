@@ -51,7 +51,7 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
             uint256 amountB,
             uint256 liquidity
         ) {
-
+        uint liquidity;
         if (amountAIn <= 0) {
             revert("SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");
         }
@@ -59,21 +59,73 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
             revert("SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");
         }
       
-        ERC20(addressA).approve(address(this),amountAIn);
-        ERC20(addressB).approve(address(this),amountBIn);
 
-        ERC20(addressA).transferFrom(msg.sender, address(this),amountAIn);
-        ERC20(addressB).transferFrom(msg.sender, address(this),amountBIn);
+
+        if (reserve0 == 0 || reserve1 == 0) {
+            actualTransferA(amountAIn);
+            actualTransferB(amountBIn);
+
+            reserve0 += reserve0 + amountAIn;
+            reserve1 += amountBIn;
+            liquidity = Math.sqrt( amountAIn* amountBIn );
+            emit AddLiquidity(msg.sender, amountAIn, amountBIn, liquidity);
+            return (amountAIn,amountBIn,liquidity);
+        }
         
+        // uint adjustReserve0 = reserve0 / 10 ** ERC20(addressA).decimals();
+        // uint adjustReserve1 = reserve1 / 10 ** ERC20(addressB).decimals();
 
-        reserve0 += reserve0 + amountAIn;
-        reserve1 += amountBIn;
-
-        uint liquidity = Math.sqrt( amountAIn* amountBIn );
-
-        emit AddLiquidity(msg.sender, amountAIn, amountBIn, liquidity);
+        uint adjustAmountAIn = amountAIn / 10 ** ERC20(addressA).decimals();
+        uint adjustAmountBIn = amountBIn / 10 ** ERC20(addressB).decimals();
         
-        return (amountAIn,amountBIn,liquidity);
+        if ((reserve0 * adjustAmountBIn) > (reserve1 * adjustAmountAIn)){
+        //等於B多給，算正確可以算入的B
+
+            uint actualAmountB = amountAIn * reserve1 / reserve0;
+            
+            actualTransferA(amountAIn);
+            actualTransferB(actualAmountB);
+
+            liquidity = Math.sqrt( amountAIn* actualAmountB );
+            reserve0 += amountAIn;
+            reserve1 += actualAmountB;
+
+            emit AddLiquidity(msg.sender, amountAIn, actualAmountB, liquidity);
+            return (amountAIn,actualAmountB,liquidity);
+
+        } else if ((reserve0 * amountBIn) < (reserve1 * amountAIn)) {
+        //等於A多給，算正確可以算入的A
+            console.log("A more");
+            uint actualAmountA = amountBIn * (reserve0 * reserve1);
+
+            actualTransferA(actualAmountA);
+            actualTransferB(amountBIn);
+
+            liquidity = Math.sqrt( actualAmountA* amountBIn );
+            reserve0 += actualAmountA;
+            reserve1 += amountBIn;
+            emit AddLiquidity(msg.sender, actualAmountA, amountBIn, liquidity);
+            return (actualAmountA,amountBIn,liquidity);
+        } else {
+            actualTransferA(amountAIn);
+            actualTransferB(amountBIn);
+            
+            liquidity = Math.sqrt( amountAIn* amountBIn );
+            reserve0 += amountAIn;
+            reserve1 += amountBIn;
+            emit AddLiquidity(msg.sender, amountAIn, amountBIn, liquidity);
+            return (amountAIn,amountBIn,liquidity);
+        }
+    }
+
+    function actualTransferA(uint amount) internal {
+        ERC20(addressA).approve(address(this),amount);
+        ERC20(addressA).transferFrom(msg.sender, address(this),amount);
+    }
+
+    function actualTransferB(uint amount) internal {
+        ERC20(addressB).approve(address(this),amount);
+        ERC20(addressB).transferFrom(msg.sender, address(this),amount);
     }
 
 
