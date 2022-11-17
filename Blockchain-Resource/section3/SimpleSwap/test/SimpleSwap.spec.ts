@@ -112,7 +112,7 @@ describe("SimpleSwap Spec", () => {
                 const amountA = parseUnits("42", tokenADecimals)
                 const amountB = parseUnits("420", tokenBDecimals)
                 const liquidity = sqrt(amountA.mul(amountB))
-
+  
                 await expect(simpleSwap.connect(maker).addLiquidity(amountA, amountB))
                     .to.changeTokenBalances(tokenA, [maker, simpleSwap], [amountA.mul(-1), amountA])
                     .to.changeTokenBalances(tokenB, [maker, simpleSwap], [amountB.mul(-1), amountB])

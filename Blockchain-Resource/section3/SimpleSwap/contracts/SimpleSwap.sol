@@ -4,12 +4,19 @@ pragma solidity 0.8.17;
 import { ISimpleSwap } from "./interface/ISimpleSwap.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import '../libraries/Math.sol';
+import { IERC20 } from "./interface/IERC20.sol";
+import "hardhat/console.sol";
 
 contract SimpleSwap is ISimpleSwap, ERC20 {
     // Implement core logic here
     address private immutable owner;
     address private immutable addressA;
     address private immutable addressB;
+
+    uint private reserve0;
+    uint private reserve1;
+
+    bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
 
     constructor(address _addressA, address _addressB) ERC20("HulkToken","Hulk") {
         if (_addressA == address(0x0)) {
@@ -45,22 +52,28 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
             uint256 liquidity
         ) {
 
-        if (amountA <= 0) {
+        if (amountAIn <= 0) {
             revert("SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");
         }
-        if (amountB <= 0) {
+        if (amountBIn <= 0) {
             revert("SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");
         }
+      
+        ERC20(addressA).approve(address(this),amountAIn);
+        ERC20(addressB).approve(address(this),amountBIn);
 
-        // uint liquidity = sqrt(amountA.mul(amountB));
-        // event AddLiquidity(address indexed sender, uint256 amountA, uint256 amountB, uint256 liquidity);
-        // emit AddLiquidity(sender, amountA, amountB, liquidity);
+        ERC20(addressA).transferFrom(msg.sender, address(this),amountAIn);
+        ERC20(addressB).transferFrom(msg.sender, address(this),amountBIn);
+        
 
+        reserve0 += reserve0 + amountAIn;
+        reserve1 += amountBIn;
 
-                //             await expect(simpleSwap.connect(maker).addLiquidity(amountA, amountB)).to.revertedWith(
-                //     "SimpleSwap: INSUFFICIENT_INPUT_AMOUNT",
-                // )
-            return (1,2,3);
+        uint liquidity = Math.sqrt( amountAIn* amountBIn );
+
+        emit AddLiquidity(msg.sender, amountAIn, amountBIn, liquidity);
+        
+        return (amountAIn,amountBIn,liquidity);
     }
 
 
@@ -68,9 +81,9 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
         return (1,2);
     }
 
-
     function getReserves() external view override returns (uint256 reserveA, uint256 reserveB) {
-        return(0,0);
+
+        return(reserve0 ,reserve1 );
     }   
 
     function getTokenA() external view override returns (address tokenA) {
@@ -79,5 +92,10 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
 
     function getTokenB() external view override returns (address tokenB) {
         return addressB;
+    }
+
+    function _safeTransfer(address token, address to, uint value) private {
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), 'UniswapV2: TRANSFER_FAILED');
     }
 }
