@@ -49,14 +49,15 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
      * construction.
      */
     constructor(string memory name_, string memory symbol_) {
-        // homework
+        _name = name_;
+        _symbol = symbol_;
     }
 
     /**
      * @dev Returns the name of the token.
      */
     function name() public view virtual override returns (string memory) {
-        // homework
+        return _name;
     }
 
     /**
@@ -64,7 +65,7 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
      * name.
      */
     function symbol() public view virtual override returns (string memory) {
-        // homework
+        return _symbol;
     }
 
     /**
@@ -81,7 +82,7 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
      * {IERC20-balanceOf} and {IERC20-transfer}.
      */
     function decimals() public view virtual override returns (uint8) {
-        // homework
+        return 18;
     }
 
     /**
@@ -221,6 +222,7 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
      * - `account` cannot be the zero address.
      */
     function _mint(address account, uint256 amount) internal virtual {
+        
         // homework
     }
 

@@ -221,10 +221,11 @@ describe("SimpleSwap Spec", () => {
                 const tokenIn = tokenA.address
                 const tokenOut = tokenB.address
                 const amountIn = parseUnits("45", tokenADecimals)
-
+                // 45A 換 B
                 await simpleSwap.connect(taker).swap(tokenIn, tokenOut, amountIn)
 
                 const [reserveAAfterSwap, reserveBAfterSwap] = await simpleSwap.getReserves()
+           
 
                 const amountA = parseUnits("18", tokenADecimals)
                 const amountB = parseUnits("2", tokenBDecimals) // amountB = amountA / reserveA * reserveB = 18 / 90 * 10 = 2
@@ -242,7 +243,6 @@ describe("SimpleSwap Spec", () => {
                     .withArgs(maker.address, amountA, amountB, liquidity)
 
                 const [reserveA, reserveB] = await simpleSwap.getReserves()
-
                 // check reserve after addLiquidity
                 expect(reserveA).to.be.eq(reserveAAfterSwap.add(amountA))
                 expect(reserveB).to.be.eq(reserveBAfterSwap.add(amountB))
@@ -321,6 +321,11 @@ describe("SimpleSwap Spec", () => {
                 .withArgs(taker.address, tokenIn, tokenOut, amountIn, amountOut)
 
             const [reserveA, reserveB] = await simpleSwap.getReserves()
+
+            console.log("reserveA");
+            console.log(reserveA);
+            console.log("reserveB");
+            console.log(reserveB);
             expect(reserveA).to.equal(parseUnits("200", tokenADecimals));
             expect(reserveB).to.equal(parseUnits("50", tokenBDecimals));
         })
