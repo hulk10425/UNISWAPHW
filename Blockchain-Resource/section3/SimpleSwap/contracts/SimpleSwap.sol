@@ -19,14 +19,15 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes('transfer(address,uint256)')));
 
     constructor(address _addressA, address _addressB) ERC20("HulkToken","Hulk") {
+        //檢查 _addressA 是否為空地址
         if (_addressA == address(0x0)) {
             revert("SimpleSwap: TOKENA_IS_NOT_CONTRACT");
         }
-
+        //檢查 _addressB 是否為空地址
         if (_addressB == address(0x0)) {
             revert("SimpleSwap: TOKENB_IS_NOT_CONTRACT");
         }
-
+        //檢查 _addressA 和 _addressB 是否為相同地址
         if (_addressA == _addressB) {
             revert("SimpleSwap: TOKENA_TOKENB_IDENTICAL_ADDRESS");
         }
@@ -42,49 +43,50 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
         address tokenOut,
         uint256 amountIn
     ) external override returns (uint256 amountOut){
-
+        // 檢查 tokenIn 是否為空地址
         if (tokenIn == address(0x0)) {
             revert("SimpleSwap: INVALID_TOKEN_IN");
         }
+        // 檢查 tokenOut 是否為空地址
         if (tokenOut == address(0x0)) {
             revert("SimpleSwap: INVALID_TOKEN_OUT");
         }
-
+        // 檢查 tokenIn 和 tokenOut 是否為相同地址
         if (tokenIn == tokenOut) {
             revert("SimpleSwap: IDENTICAL_ADDRESS");
         }
-
+        // 檢查 amountIn 是否為 0
         if (amountIn == 0) {
             revert("SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");
         }
-
-        if (amountIn == 1) {
+        // 檢查 amountIn 是否 過於小
+        if (amountIn <= 1) {
             revert("SimpleSwap: INSUFFICIENT_OUTPUT_AMOUNT");
         }
 
         uint k = reserve0 * reserve1;
+
+        // 輸入AToken 想兌換BToken
         if (tokenIn == addressA) {
+            // 透過 x * y = k ，算出新的 A、B Token
             uint newReserve0 = reserve0 + amountIn;
             uint newReserve1 = k / newReserve0;
             uint diffReserve1 = reserve1 - newReserve1;
-            if (diffReserve1 == 0) {
-                revert("SimpleSwap: INSUFFICIENT_OUTPUT_AMOUNT");
-            }
-
+            
             reserve0 = newReserve0;
             reserve1 = newReserve1;
+            // msg.sender 轉入 A Token to this address
             actualTransferA(amountIn);
+            // this address 轉出 B Token to msg.sender
             _safeTransfer(addressB, msg.sender, diffReserve1);
-
+            //紀錄 swap 事件
             emit Swap(msg.sender,addressA, addressB, amountIn,diffReserve1);
             return diffReserve1;
         } else {
             uint newReserve1 = reserve1 + amountIn;
             uint newReserve0 = k / newReserve1;
             uint diffReserve0 = reserve0 - newReserve0;
-            if (diffReserve0 == 0) {
-                revert("SimpleSwap: INSUFFICIENT_OUTPUT_AMOUNT");
-            }
+
             reserve0 = newReserve0;
             reserve1 = newReserve1;
             actualTransferB(amountIn);
@@ -104,15 +106,16 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
             uint256 liquidity
         ) {
         uint liquidity;
+        //檢查 amountAIn 的數量
         if (amountAIn <= 0) {
             revert("SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");
         }
+        //檢查 amountBIn 的數量
         if (amountBIn <= 0) {
             revert("SimpleSwap: INSUFFICIENT_INPUT_AMOUNT");
         }
-      
-
-
+    
+        // 如果是 完全沒有流動性時，初次加入流動性
         if (reserve0 == 0 || reserve1 == 0) {
             actualTransferA(amountAIn);
             actualTransferB(amountBIn);
@@ -130,14 +133,15 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
         uint adjustAmountAIn = amountAIn / 10 ** ERC20(addressA).decimals();
         uint adjustAmountBIn = amountBIn / 10 ** ERC20(addressB).decimals();
         
+        // 不是第一次加入流動性，且B Token 多給的狀況
         if ((reserve0 * adjustAmountBIn) > (reserve1 * adjustAmountAIn)){
-        //等於B多給，算正確可以算入的B
-
+            // 計算出真正能被計入流動性的 B Token 數量
             uint actualAmountB = amountAIn * reserve1 / reserve0;
-            
+            // msg.sender 轉入 AToken
             actualTransferA(amountAIn);
+            // msg.sender 轉入 BToken
             actualTransferB(actualAmountB);
-
+            // 算出 新增的流動性
             liquidity = Math.sqrt( amountAIn* actualAmountB );
             reserve0 += amountAIn;
             reserve1 += actualAmountB;
@@ -146,8 +150,9 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
             emit AddLiquidity(msg.sender, amountAIn, actualAmountB, liquidity);
             return (amountAIn,actualAmountB,liquidity);
 
+        // 不是第一次加入流動性，且A Token 多給的狀況
         } else if ((reserve0 * adjustAmountBIn) < (reserve1 * adjustAmountAIn)) {
-        //等於A多給，算正確可以算入的A
+       
             uint actualAmountA = amountBIn * (reserve0) / (reserve1);
 
             actualTransferA(actualAmountA);
@@ -161,7 +166,7 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
             emit AddLiquidity(msg.sender, actualAmountA, amountBIn, liquidity);
             return (actualAmountA,amountBIn,liquidity);
         } else {
-
+            // 不是第一次加入流動性，且A 、B Token 比例合乎池內比例
             actualTransferA(amountAIn);
             actualTransferB(amountBIn);
             
@@ -195,7 +200,6 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
 
         uint removeReserve0 = liquidity * reserve0 / totalLP;
         uint removeReserve1 = liquidity * reserve1 / totalLP;
-
 
         reserve0 -= removeReserve0;
         reserve1 -= removeReserve1;
