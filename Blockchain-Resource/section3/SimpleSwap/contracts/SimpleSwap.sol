@@ -64,26 +64,15 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
 
         uint k = reserve0 * reserve1;
         if (tokenIn == addressA) {
-            console.log("inA");
             uint newReserve0 = reserve0 + amountIn;
             uint newReserve1 = k / newReserve0;
             uint diffReserve1 = reserve1 - newReserve1;
-            console.log("diffReserve1");
-            console.log(diffReserve1);
-
             if (diffReserve1 == 0) {
                 revert("SimpleSwap: INSUFFICIENT_OUTPUT_AMOUNT");
             }
 
             reserve0 = newReserve0;
             reserve1 = newReserve1;
-
-            console.log("reserve0");
-            console.log(reserve0);
-            console.log("reserve1");
-            console.log(reserve1);
-
-
             actualTransferA(amountIn);
             _safeTransfer(addressB, msg.sender, diffReserve1);
 
@@ -93,8 +82,6 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
             uint newReserve1 = reserve1 + amountIn;
             uint newReserve0 = k / newReserve1;
             uint diffReserve0 = reserve0 - newReserve0;
-            console.log("diffReserve0");
-            console.log(diffReserve0);
             if (diffReserve0 == 0) {
                 revert("SimpleSwap: INSUFFICIENT_OUTPUT_AMOUNT");
             }
@@ -136,6 +123,7 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
 
             _mint(msg.sender, liquidity);
             emit AddLiquidity(msg.sender, amountAIn, amountBIn, liquidity);
+            emit Transfer(address(0x0),msg.sender,liquidity);
             return (amountAIn,amountBIn,liquidity);
         }
 
@@ -154,13 +142,12 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
             reserve0 += amountAIn;
             reserve1 += actualAmountB;
             _mint(msg.sender, liquidity);
-
+            emit Transfer(address(0x0),msg.sender,liquidity);
             emit AddLiquidity(msg.sender, amountAIn, actualAmountB, liquidity);
             return (amountAIn,actualAmountB,liquidity);
 
         } else if ((reserve0 * adjustAmountBIn) < (reserve1 * adjustAmountAIn)) {
         //等於A多給，算正確可以算入的A
-            console.log("A more");
             uint actualAmountA = amountBIn * (reserve0) / (reserve1);
 
             actualTransferA(actualAmountA);
@@ -170,6 +157,7 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
             reserve0 += actualAmountA;
             reserve1 += amountBIn;
             _mint(msg.sender, liquidity);
+            emit Transfer(address(0x0),msg.sender,liquidity);
             emit AddLiquidity(msg.sender, actualAmountA, amountBIn, liquidity);
             return (actualAmountA,amountBIn,liquidity);
         } else {
@@ -181,6 +169,7 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
             reserve0 += amountAIn;
             reserve1 += amountBIn;
             _mint(msg.sender, liquidity);
+            emit Transfer(address(0x0),msg.sender,liquidity);
             emit AddLiquidity(msg.sender, amountAIn, amountBIn, liquidity);
             return (amountAIn,amountBIn,liquidity);
         }
@@ -214,7 +203,7 @@ contract SimpleSwap is ISimpleSwap, ERC20 {
         _safeTransfer(addressA, msg.sender, removeReserve0);
         _safeTransfer(addressB, msg.sender, removeReserve1);
         _burn(msg.sender,liquidity);
-       
+        emit Transfer(address(this),address(0x0),liquidity);
         emit RemoveLiquidity(msg.sender, removeReserve0,removeReserve1,liquidity);
         return (removeReserve0,removeReserve1);
     }

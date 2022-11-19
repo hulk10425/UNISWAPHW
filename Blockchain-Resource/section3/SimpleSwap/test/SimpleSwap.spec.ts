@@ -321,11 +321,6 @@ describe("SimpleSwap Spec", () => {
                 .withArgs(taker.address, tokenIn, tokenOut, amountIn, amountOut)
 
             const [reserveA, reserveB] = await simpleSwap.getReserves()
-
-            console.log("reserveA");
-            console.log(reserveA);
-            console.log("reserveB");
-            console.log(reserveB);
             expect(reserveA).to.equal(parseUnits("200", tokenADecimals));
             expect(reserveB).to.equal(parseUnits("50", tokenBDecimals));
         })
